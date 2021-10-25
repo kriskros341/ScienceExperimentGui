@@ -1,8 +1,8 @@
 {
-  "name": "react-nodegui-starter",
+  "name": "GOLF",
   "version": "1.0.0",
   "main": "index.js",
-  "author": "Atul R <atulanand94@gmail.com>",
+  "author": "Krzysztof Czuba",
   "license": "MIT",
   "private": true,
   "scripts": {
@@ -22,6 +22,7 @@
     "@babel/preset-react": "^7.10.4",
     "@babel/preset-typescript": "^7.10.4",
     "@nodegui/packer": "^1.4.1",
+    "@nodegui/plugin-animation": "^1.1.0",
     "@types/node": "^14.11.1",
     "@types/react": "^16.9.49",
     "@types/webpack-env": "^1.15.3",
