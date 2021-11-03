@@ -1,26 +1,34 @@
-import { Window, View, LineEdit, Button } from "@nodegui/react-nodegui";
-import React, { useState, useRef } from "react";
+import { Window, View, LineEdit, Button, ComboBox, Text } from "@nodegui/react-nodegui";
+import React, { useState, useEffect, useRef, memo, useMemo } from "react";
 import {useConnection} from '../connect'
 import defaults from './defaults'
 import ConnectionProvider from './ConnectionHandler'
-
+import * as fs from 'fs'
+import os from 'os'
 
 interface ConnectionComponent {
 	setIpAddress: (s: string) => void
 	establishConnection: () => void
 	currentIpAddress: string | undefined
+	err: string | null
 }
 
 
 const ConnectionForm: React.FC<ConnectionComponent> = (
-	{ setIpAddress, establishConnection, currentIpAddress }
+	{ setIpAddress, establishConnection, currentIpAddress, err }
 ) => {
 	const [ isConnecting, setConnecting ] = useState<boolean>(false)
-	const btnRef = useRef(null)
+	useEffect(() => {
+		if(typeof err == 'string' && isConnecting == true) {
+			setConnecting(false)
+		}
+	}, [err])
 	const connectBtnHandler = {
 		clicked: (e: any) => {
-			setConnecting(v => !v)
-			establishConnection()	
+			if(!isConnecting) {
+				setConnecting(v => !v)
+				establishConnection()	
+			}
 		},
 	}
 	const ipChangeHandler = {
@@ -33,18 +41,35 @@ const ConnectionForm: React.FC<ConnectionComponent> = (
 			style={containerStyle}
 			id={"container"}
 		>
-			<LineEdit 
-				on={ipChangeHandler}
-				enabled={!isConnecting}
-				text={currentIpAddress}
-			/>
+			<View style={'flex: 0; flex-direction: row;'}>
+				<LineEdit 
+					style={'flex: 2rem; width: 128px;'}
+					text={"root"}
+				/>
+				<Text>@</Text>
+				<LineEdit
+					style={'flex: 100%'}
+					on={ipChangeHandler}
+					enabled={!isConnecting}
+					text={currentIpAddress}
+				/>
+				<Text>:</Text>
+				<LineEdit
+					style={'flex: 2rem; width: 64px;'}
+					text={"22"}
+				/>
+			</View>
+			<ComboBox items={[{text: 'a'}, {text: 'b'}]}>
+			</ComboBox>
 			<Button 
-				ref={btnRef}
 				on={connectBtnHandler}
 				id={"connectBtn"}
 			>
 				{isConnecting ? "Connecting" : "Connect"} 
 			</Button>
+			{err && (
+				<Text>{err}</Text>
+			)}
 		</View>
 	)
 }
@@ -58,7 +83,10 @@ const WindowHandler: React.FC<{}> = ({}) => {
 	const [targetIp, setTargetIp] = useState<string>(defaults.ipAddress)
 	// replace PiInterface with integrated interface 
 	const sshString = `${defaults.remoteUser}@${targetIp}`
-	const [targetProbeResponse, reprobe] = useConnection(sshString)
+	const [targetProbeResponse, reprobe, err] = useConnection(sshString)
+	const establishConnection = () => {
+		reprobe()
+	}
 	if(targetProbeResponse) {
 		return(
 			<Window
@@ -77,11 +105,10 @@ const WindowHandler: React.FC<{}> = ({}) => {
 			styleSheet={containerStyle}
 		>
 			<ConnectionForm 
-				establishConnection={
-					() => reprobe()
-				}
+				establishConnection={establishConnection}
 				setIpAddress={(ip: string) => setTargetIp(ip)}
 				currentIpAddress={targetIp}
+				err={err}
 			/>
 		</Window>
 		)
@@ -89,7 +116,6 @@ const WindowHandler: React.FC<{}> = ({}) => {
 
 const containerStyle = `
 	#container {
-		flex: 1;
 		padding: 16px;
 	}
 	#connectBtn {

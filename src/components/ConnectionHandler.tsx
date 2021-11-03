@@ -46,7 +46,7 @@ const ConnectionProvider: React.FC<{
 		<View	style={boxStyle}>
 			<ControlsBtn
 				onBtnClick={onBtnClick}
-				text={streamState}
+				text={streamState == "preStream" ? "start stream" : "end stream"}
 			/>
 			<StreamProvider
 				ipAddress={ipAddress}

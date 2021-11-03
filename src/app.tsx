@@ -1,5 +1,5 @@
 import { hot } from "@nodegui/react-nodegui";
-import WindowHandler from "./components/WindowHandler"
+import WindowHandler from "./components/windowHandler"
 import React from "react"
 
 const App = () => {

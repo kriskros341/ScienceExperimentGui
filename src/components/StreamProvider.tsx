@@ -3,7 +3,7 @@ import React, { useState, useCallback } from "react";
 import {streamStateModel} from './ConnectionHandler'
 import useStream from '../connect'
 import LogView from './LogView'
-import OptionsView from './OptionsView'
+import OptionsView, {OptionsModel} from './OptionsView'
 
 interface PiInterface {
 	streamState: streamStateModel

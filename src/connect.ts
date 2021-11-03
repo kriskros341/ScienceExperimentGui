@@ -22,6 +22,7 @@ export const useStream = (
 			return () => stdOutStream.destroy()
 		}
 		const endStream = (async () => {
+			deviceLog.current = []
 			return await HandleStream()
 		})()
 		// the async code doesn't leave async functions
@@ -35,36 +36,61 @@ export const useStream = (
 }
 
 
-export const useConnection = (sshTarget: string) => {
+type errModel = null | string
+
+type connectionModel = [
+	boolean,
+	() => void,
+	errModel
+]
+
+export const useConnection = (sshTarget: string, maxRetries = 5) => {
+	const [ err, setErr ] = useState<errModel>()
 	const [ isConnected, setConnected ] = useState<boolean>(false)
 	const testPassedCallback = useCallback(() => {
 		setConnected(true)
 	}, [])
+	const setErrorAfterRetries = useCallback(
+		(e: errModel | undefined ) => {
+			console.log("connection killed")
+			setErr(e)
+		}, []
+	)
 	const testConnection = useCallback(() => {
+		setErr(null)
 		if(sshTarget) {
-			sshProbe(sshTarget, testPassedCallback)
+			sshProbe(
+				sshTarget, 
+				testPassedCallback,
+				setErrorAfterRetries
+			)
 		}
 	}, [])
-	return [isConnected, testConnection] as [boolean, () => void]
+	return [isConnected, testConnection, err] as connectionModel
 }
+
 
 
 const sshProbe = (
 	sshTarget: string,
-	establishedCallback: () => void
+	establishedCallback: () => void,
+	onErrorCallback?: (errData?: errModel) => void
 ) => {
 	const testMessage = "echo hello world"
 	async function connection() {
 		const childProcess = spawn('ssh', [sshTarget, testMessage])
 		childProcess.stderr.on('data', (data) => {
-			console.log("ERROR", data.toString())
+			const errData = data.toString()
+			onErrorCallback && onErrorCallback(errData)
+			childProcess.kill()
 		})
+		childProcess.once("exit", () => console.log("exit!"))
 		childProcess.stdout.on("data", (d) => {
 			const data = d.toString()
 			if(data.includes("hello world")) {
 				console.log("connected successfully")
 				establishedCallback()
-			} 
+			}
 		})
 	}
 	connection()
@@ -74,7 +100,6 @@ async function establishConnection(
 	sshTarget: string,
 	commands: string[]
 ) {
-	const testMessage = "echo hello world"
 	async function connection() {
 		const childProcess = spawn('ssh', [sshTarget, ...commands])
 		childProcess.on('close', () => {
