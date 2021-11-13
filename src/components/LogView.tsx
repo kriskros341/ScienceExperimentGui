@@ -43,12 +43,6 @@ const LogView: React.FC<LogViewInterface> = ({logs, streamStart}) => {
 		const cleanup = streamStart()
 		return () => cleanup()
 	}, [])
-	const hold = useCallback(() => {
-		if(showNewEntries) {
-			setShowNewEntries(false)
-			setTimeout(() => setShowNewEntries(true), 4000)
-		}
-	}, [])
 	return (
 		<View style={"flex: 1; flex-direction: row"}>
 			<View style={"flex: 3; padding-right: 4"}>
