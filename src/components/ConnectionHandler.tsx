@@ -90,6 +90,46 @@ const ConnectionForm: React.FC<ConnectionComponent> = (
 	)
 }
 
+const Interface: React.FC<{
+	targetIp: string,
+	toggleWindowSize: () => () => void 
+}> = ({targetIp, toggleWindowSize}) => {
+	const [streamState, setStreamState] = useState<streamStateModel>("preStream")
+	const [deviceLog, startStream] = useStream(`root@${targetIp}`, "python3 main.py")
+	const [options, handleOptions] = useStateObjectHandler<OptionsModel>(defaults.options)
+	
+	useEffect(() => {
+		const makeWindowSmallAgain = toggleWindowSize()
+		return () => makeWindowSmallAgain()
+	}, [])
+	
+	const mainBtnHandler = () => 
+		isStreaming ? setStreamState("preStream") : setStreamState("streamStarted")
+	const isStreaming = streamState === "streamStarted"
+	const mainBtnText = isStreaming ? "end stream" : "start stream"
+
+	return (
+		<>
+			<ControlsBtn
+				onBtnClick={mainBtnHandler}
+				text={mainBtnText}
+			/>
+			{(isStreaming ? (
+				<LogView 
+					logs={deviceLog} 
+					streamStart={startStream} 
+				/>
+			) : (
+				<OptionsView />
+			)
+			)}
+		</>
+	)
+}
+
+
+
+
 
 const defaults = {
 	ipAddress: "192.168.1.21",
@@ -110,52 +150,26 @@ const useStateObjectHandler = <T, >(initialState: T) => {
 }
 
 const ConnectionProvider: React.FC<{
-	setWindowSize: () => void
-}> = () => {
-	const [streamState, setStreamState] = useState<streamStateModel>("preStream")
+	toggleWindowSize: () => () => void
+}> = ({toggleWindowSize}) => {
 	const [targetIp, setTargetIp] = useState<string>(defaults.ipAddress)
 	const sshString = `${defaults.remoteUser}@${targetIp}`
 	const [targetProbeResponse, reprobe, err] = useConnection(sshString)
 	const establishConnection = () => {
 		reprobe()
 	}
-	const getBtnHandler = (btnType: streamStateModel) => {
-		const handlers = {
-			"preStream": () => {
-				setStreamState("streamStarted")
-			},
-			"streamStarted": () => {
-				setStreamState("preStream")
-			},
-		}
-		return handlers[btnType]
-	}
-	const mainBtnHandler = getBtnHandler(streamState)
-	const isStreaming = streamState === "streamStarted"
 	// can I abstract some connection logic away?
-	const [deviceLog, startStream] = useStream(`root@${targetIp}`, "python3 main.py")
-	const [options, handleOptions] = useStateObjectHandler<OptionsModel>(defaults.options)
-	
 	// Change window size based on targetProbeResponse
 	// Also refactor the living shit out of useStream because I'm a fucking monkey
-
+	//
+	// connection and stream are separate... is it wrong?
 	return (
 		<View	style={boxStyle}>
 			{targetProbeResponse ? (
-				<>
-					<ControlsBtn
-						onBtnClick={mainBtnHandler}
-						text={streamState == "preStream" ? "start stream" : "end stream"}
-					/>
-					{(isStreaming ? (
-						<LogView 
-							logs={deviceLog} 
-							streamStart={startStream} 
-						/>
-					) : (
-						<OptionsView />
-					))}
-				</>
+				<Interface
+					toggleWindowSize={toggleWindowSize}
+					targetIp={targetIp}	
+				/>
 			) : (
 				<ConnectionForm 
 					currentIpAddress={targetIp}
