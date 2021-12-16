@@ -2,8 +2,32 @@ import { spawn } from 'child_process'
 import { pipeline, Writable, Readable } from 'stream'
 import {useState, useRef, useEffect, useCallback} from 'react'
 
+enum errNo {
+	YetToConnect = -1,
+	Ok = 0,
+	Problem,
+}
 
-export const useStream = (
+type error = {
+	code: errNo,
+	message: string,
+}
+
+
+const testConnection = (target: string) => {
+	const testMessage = "echo hello world"
+	const [error, setError] = useState({code: -1, message: ""})
+	async function connection() {
+		const childProcess = spawn('ssh', [target, testMessage])
+		console.log(childProcess.stderr)
+	}
+	connection()
+	return [error.code, error.message] as [number, string]
+}
+
+
+
+export const useStream__old = (
 	sshTarget: string,
 	command: string
 ) => { 
@@ -35,29 +59,29 @@ export const useStream = (
 	return [deviceLog.current, handleStream] as [string[], () => () => void]                                                          
 }
 
-
-type errModel = null | string
-
 type connectionModel = [
 	boolean,
 	() => void,
-	errModel
+	error
 ]
 
-export const useConnection = (sshTarget: string, maxRetries = 5) => {
-	const [ err, setErr ] = useState<errModel>()
+
+
+export const useConnection = (sshTarget: string) => {
+	console.log(sshTarget)
+	const [ error, setError ] = useState<error>()
 	const [ isConnected, setConnected ] = useState<boolean>(false)
 	const testPassedCallback = useCallback(() => {
 		setConnected(true)
 	}, [])
 	const setErrorAfterRetries = useCallback(
-		(e: errModel | undefined ) => {
+		(e: error ) => {
 			console.log("connection killed")
-			setErr(e)
+			setError(e)
 		}, []
 	)
 	const testConnection = useCallback(() => {
-		setErr(null)
+		setError({code: 0, message: ""})
 		if(sshTarget) {
 			sshProbe(
 				sshTarget, 
@@ -66,7 +90,7 @@ export const useConnection = (sshTarget: string, maxRetries = 5) => {
 			)
 		}
 	}, [])
-	return [isConnected, testConnection, err] as connectionModel
+	return [isConnected, testConnection, error] as connectionModel
 }
 
 
@@ -74,23 +98,27 @@ export const useConnection = (sshTarget: string, maxRetries = 5) => {
 const sshProbe = (
 	sshTarget: string,
 	establishedCallback: () => void,
-	onErrorCallback?: (errData?: errModel) => void
+	onErrorCallback?: (errData: error) => void
 ) => {
+	console.log(sshTarget)
 	const testMessage = "echo hello world"
 	async function connection() {
+		console.log(sshTarget)
 		const childProcess = spawn('ssh', [sshTarget, testMessage])
 		childProcess.stderr.on('data', (data) => {
-			const errData = data.toString()
+			const errData = {code: 1, message: data.toString()}
 			onErrorCallback && onErrorCallback(errData)
 			childProcess.kill()
 		})
 		childProcess.once("exit", () => console.log("exit!"))
 		childProcess.stdout.on("data", (d) => {
 			const data = d.toString()
+			console.log(data)
 			if(data.includes("hello world")) {
 				console.log("connected successfully")
 				establishedCallback()
 			}
+			childProcess.kill()
 		})
 	}
 	connection()
@@ -116,4 +144,4 @@ async function establishConnection(
 	
 }
 
-export default useStream
+export default useStream__old

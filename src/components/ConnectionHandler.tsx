@@ -9,12 +9,6 @@ export type streamStateModel = "preStream" | "streamStarted"
 
 
 
-interface ConnectionComponent {
-	setIpAddress: (s: string) => void
-	establishConnection: () => void
-	currentIpAddress: string | undefined
-	err: string | null
-}
 
 const ControlsBtn: React.FC<{text: string, onBtnClick: () => void}> = ({text, onBtnClick}) => {
 	const ControlsBtnHandler = {
@@ -30,9 +24,15 @@ const ControlsBtn: React.FC<{text: string, onBtnClick: () => void}> = ({text, on
 	)
 }
 
+interface ConnectionComponent {
+	setConnData: (s: Partial<connModel>) => void
+	establishConnection: () => void
+	connData: connModel
+	err: string | null
+}
 
 const ConnectionForm: React.FC<ConnectionComponent> = (
-	{ setIpAddress, establishConnection, currentIpAddress, err }
+	{ connData, setConnData, establishConnection, err }
 ) => {
 	const [ isConnecting, setConnecting ] = useState<boolean>(false)
 	useEffect(() => {
@@ -48,12 +48,16 @@ const ConnectionForm: React.FC<ConnectionComponent> = (
 			}
 		},
 	}
-	const ipChangeHandler = {
-		textChanged: (e: any) => {
-			setIpAddress(e)
+	const userChangeHandler = {
+		textChanged: (user: string) => {
+			setConnData({user: user})
 		}
 	}
-
+	const ipChangeHandler = {
+		textChanged: (ip: string) => {
+			setConnData({ipAddress: ip})
+		}
+	}
 	return (
 		<View 
 			style={containerStyle}
@@ -62,19 +66,16 @@ const ConnectionForm: React.FC<ConnectionComponent> = (
 			<View style={'flex: 0; flex-direction: row;'}>
 				<LineEdit 
 					style={'flex: 2rem; width: 128px;'}
-					text={"root"}
+					on={userChangeHandler}
+					enabled={!isConnecting}
+					text={connData.user}
 				/>
 				<Text>@</Text>
 				<LineEdit
 					style={'flex: 100%'}
 					on={ipChangeHandler}
 					enabled={!isConnecting}
-					text={currentIpAddress}
-				/>
-				<Text>:</Text>
-				<LineEdit
-					style={'flex: 2rem; width: 64px;'}
-					text={"22"}
+					text={connData.ipAddress}
 				/>
 			</View>
 			<Button 
@@ -149,14 +150,29 @@ const useStateObjectHandler = <T, >(initialState: T) => {
 	return [state, changeHandler] as [T, (newState: T) => void]
 }
 
+type connModel = {
+	user: string;
+	ipAddress: string;
+}
+
+const connDefaults: connModel = {
+	user: "root",
+	ipAddress: "192.168.1.21",
+}
+
 const ConnectionProvider: React.FC<{
 	toggleWindowSize: () => () => void
 }> = ({toggleWindowSize}) => {
-	const [targetIp, setTargetIp] = useState<string>(defaults.ipAddress)
-	const sshString = `${defaults.remoteUser}@${targetIp}`
+	const [connData, setConnData] = useState<connModel>(connDefaults)
+	const sshString = `${connData.user}@${connData.ipAddress}`
 	const [targetProbeResponse, reprobe, err] = useConnection(sshString)
 	const establishConnection = () => {
 		reprobe()
+	}
+	console.log(sshString)
+	//CIEKAWE
+	const handleConnDataChange = (val: Partial<connModel>) => {
+		setConnData(v => ({...v, ...val}))
 	}
 	// can I abstract some connection logic away?
 	// Change window size based on targetProbeResponse
@@ -168,14 +184,14 @@ const ConnectionProvider: React.FC<{
 			{targetProbeResponse ? (
 				<Interface
 					toggleWindowSize={toggleWindowSize}
-					targetIp={targetIp}	
+					targetIp={connData.ipAddress}	
 				/>
 			) : (
 				<ConnectionForm 
-					currentIpAddress={targetIp}
+					connData={connData}
+					setConnData={(newData: Partial<connModel>) => handleConnDataChange(newData)}
 					establishConnection={establishConnection}
-					setIpAddress={(ip: string) => setTargetIp(ip)}
-					err={err}
+					err={err.message}
 				/>
 			)}
 		</View>
