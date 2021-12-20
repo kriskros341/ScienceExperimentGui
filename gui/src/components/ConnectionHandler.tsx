@@ -1,6 +1,5 @@
 import { View, Button, LineEdit, Text  } from "@nodegui/react-nodegui";
-import useStream from '../connect'
-import {useConnection} from '../connect'
+import { useConnection } from '../connect'
 import React, { useState, useEffect, useCallback } from "react";
 import LogView from './LogView'
 import OptionsView, {OptionsModel} from './OptionsView'
@@ -42,10 +41,10 @@ const ConnectionForm: React.FC<ConnectionComponent> = (
 	}, [err])
 	const connectBtnHandler = {
 		clicked: (e: any) => {
+			setConnecting(v => !v)
 			if(!isConnecting) {
-				setConnecting(v => !v)
 				establishConnection()	
-			}
+			}		
 		},
 	}
 	const userChangeHandler = {
@@ -96,7 +95,7 @@ const Interface: React.FC<{
 	toggleWindowSize: () => () => void 
 }> = ({targetIp, toggleWindowSize}) => {
 	const [streamState, setStreamState] = useState<streamStateModel>("preStream")
-	const [deviceLog, startStream] = useStream(`root@${targetIp}`, "python3 main.py")
+	const [conState, testConnection, deviceLog, startStream, err] = useConnection('ws://${targetIp}:8080')
 	const [options, handleOptions] = useStateObjectHandler<OptionsModel>(defaults.options)
 	
 	useEffect(() => {
@@ -165,9 +164,9 @@ const ConnectionProvider: React.FC<{
 }> = ({toggleWindowSize}) => {
 	const [connData, setConnData] = useState<connModel>(connDefaults)
 	const sshString = `${connData.user}@${connData.ipAddress}`
-	const [targetProbeResponse, reprobe, err] = useConnection(sshString)
+	const [targetProbeResponse, probe, , ,err] = useConnection(connData.ipAddress)
 	const establishConnection = () => {
-		reprobe()
+		probe()
 	}
 	console.log(sshString)
 	//CIEKAWE

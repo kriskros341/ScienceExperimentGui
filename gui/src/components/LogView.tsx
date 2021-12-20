@@ -1,5 +1,5 @@
 import { Text, Window, View, LineEdit, Button, PlainTextEdit } from "@nodegui/react-nodegui";
-import React, {useState, useEffect, useCallback, memo} from 'react'
+import React, {useState, useEffect, memo } from 'react'
 
 
 interface LogViewInterface {
