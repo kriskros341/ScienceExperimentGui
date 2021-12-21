@@ -42,6 +42,7 @@ const ConnectionForm: React.FC<ConnectionComponent> = (
 	const connectBtnHandler = {
 		clicked: (e: any) => {
 			setConnecting(v => !v)
+			console.log(isConnecting)
 			if(!isConnecting) {
 				establishConnection()	
 			}		
@@ -97,7 +98,6 @@ const Interface: React.FC<{
 	const [streamState, setStreamState] = useState<streamStateModel>("preStream")
 	
 	const [deviceLog, startStream] = useStream(`ws://${targetIp}:8080`)
-	console.log(deviceLog)
 	const [options, handleOptions] = useStateObjectHandler<OptionsModel>(defaults.options)
 	
 	useEffect(() => {
@@ -134,8 +134,7 @@ const Interface: React.FC<{
 
 
 const defaults = {
-	ipAddress: "192.168.1.21",
-	remoteUser: "root",
+	ipAddress: "localhost",
 	options: {
 		temperature: 40,
 	}

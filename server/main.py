@@ -33,7 +33,7 @@ class MyWebsocket(tornado.websocket.WebSocketHandler):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.isRunning = False
-        
+        self.process = None
 
     def check_origin(self, origin):
         return False
@@ -58,15 +58,17 @@ class MyWebsocket(tornado.websocket.WebSocketHandler):
 
     def on_message(self, message):
         print("INCOMING: "+message)
+        print("ISRUNNING", self.isRunning) 
+        print("PROCESS", self.process)
         if message == 'check':
-            if(self.isRunning):
+            if(self.process):
                 self.write_message("Already running!")
                 print("OUTGOING: Already running!")
             else:
                 self.write_message("Ok to start.")
                 print("OUTGOING: Ok to start.")
         if message == 'start':
-            if(not self.isRunning):
+            if(not self.process):
                 IOLoop.current().asyncio_loop.create_task(self.stream_output())
                 self.write_message("Ok.")
                 print("OUTGOING: Ok.")
@@ -91,16 +93,17 @@ class MyWebsocket(tornado.websocket.WebSocketHandler):
         """
         print('starting')
         self.isRunning = True
-        sub_process = tornado.process.Subprocess(
+        self.process = tornado.process.Subprocess(
             ["python3", "-u", "test.py"], 
             stdout=PIPE, 
             stderr=PIPE,
         )
-        for line in iter(sub_process.stdout.readline, ""):
+        for line in iter(self.process.stdout.readline, ""):
             if(line == b''):
                 break;
             self.write_message(line[0:-1])
-        #self.close()
+        self.write_message('End.')
+        self.process = None
         self.isRunning = False
 
 
