@@ -13,6 +13,9 @@ interface LogAreaInterface {
 
 
 const LogArea: React.FC<{data: string[]}> = ({data}) => {
+	useEffect(() => {
+		console.log(data)
+	}, [ data.length ])
 	return (
 		<>
 			<Text>stdout:</Text>

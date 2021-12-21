@@ -1,20 +1,36 @@
 import WebSocket from 'ws'
 import { useCallback, useMemo, useEffect, useRef, useState } from 'react'
-import { exec } from 'child_process'
-
+import http from 'http'
+import axios from 'axios'
 
 export const useConnection = (path: string) => {
+
 	const [ conState, setConState	] = useState<boolean>(false);
+	const err = useRef<string>('')
 	const testConnection = () => {
-		setConState(true)
+		axios.get('http://'+path+":8080/?check")
+			.then(d => {
+				if(d.data == 'Ok') {
+					setConState(true)
+					err.current = ''
+				} else if (d.data == 'In use') {
+					setConState(false)
+					err.current = 'in use'
+				}
+			}).catch(e => {
+				setConState(false)
+				console.log(e)
+				err.current = e.code
+			})
 	}
-	const err = useRef<string>('').current
 
-
-	return [ conState, testConnection, err ] as [boolean, () => void, string] 
+	return [ conState, testConnection, err.current ] as [boolean, () => void, string] 
 }
 
 export const useStream = (path: string) => {
+	const [, refresher] = useState<boolean>(false)
+	const refresh = () => refresher(v => !v)
+	
 	const ws = useRef<WebSocket>();
 	const messageLog = useRef<string[]>([])
 	useEffect(() => {
@@ -24,7 +40,11 @@ export const useStream = (path: string) => {
 		ws.current.on('error', (e) => {
 			console.log(e)
 		})
-		ws.current.on('message', (m) => console.log(m))
+		ws.current.on('message', (m) => {
+			const str = m.toString()
+			messageLog.current.push(str)
+			refresh()
+		})
 	}, [])
 
 	const startStream = () => {

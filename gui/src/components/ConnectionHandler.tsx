@@ -97,6 +97,7 @@ const Interface: React.FC<{
 	const [streamState, setStreamState] = useState<streamStateModel>("preStream")
 	
 	const [deviceLog, startStream] = useStream(`ws://${targetIp}:8080`)
+	console.log(deviceLog)
 	const [options, handleOptions] = useStateObjectHandler<OptionsModel>(defaults.options)
 	
 	useEffect(() => {

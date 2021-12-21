@@ -42,7 +42,9 @@ module.exports = (env, argv) => {
         }
       ]
     },
-    plugins: [new CleanWebpackPlugin()],
+    plugins: [
+			new CleanWebpackPlugin()
+		],
     resolve: {
       extensions: [".tsx", ".ts", ".js", ".jsx", ".json"]
     }

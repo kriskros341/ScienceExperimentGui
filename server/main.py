@@ -17,13 +17,39 @@ DataTbl = sa.Table('Data', meta,
 #aiomysql.sa 
 
 
+#class MyHTTP(tornado.web.RequestHandler)
+
+
+
+
+
+
+
+
+
+
+
 class MyWebsocket(tornado.websocket.WebSocketHandler):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.isRunning = False
+        
 
     def check_origin(self, origin):
-        return True
+        return False
+
+    
+    async def get(self, *args, **kwargs):
+        # Why reinvent the wheel. literally.
+        print("get")
+        if('check' in self.request.query.split('&')):
+            if(self.isRunning):
+                self.write("In use")
+            else: 
+                self.write("Ok")
+        else:
+            await super().get(*args, **kwargs)
+
 
 
     def open(self):
@@ -69,12 +95,11 @@ class MyWebsocket(tornado.websocket.WebSocketHandler):
             ["python3", "-u", "test.py"], 
             stdout=PIPE, 
             stderr=PIPE,
-            universal_newlines=True
         )
         for line in iter(sub_process.stdout.readline, ""):
             if(line == b''):
                 break;
-            self.write_message(line)
+            self.write_message(line[0:-1])
         #self.close()
         self.isRunning = False
 
