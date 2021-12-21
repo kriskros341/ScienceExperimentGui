@@ -1,5 +1,5 @@
 import { View, Button, LineEdit, Text  } from "@nodegui/react-nodegui";
-import { useConnection } from '../connect'
+import { useStream, useConnection } from '../connect'
 import React, { useState, useEffect, useCallback } from "react";
 import LogView from './LogView'
 import OptionsView, {OptionsModel} from './OptionsView'
@@ -95,7 +95,8 @@ const Interface: React.FC<{
 	toggleWindowSize: () => () => void 
 }> = ({targetIp, toggleWindowSize}) => {
 	const [streamState, setStreamState] = useState<streamStateModel>("preStream")
-	const [conState, testConnection, deviceLog, startStream, err] = useConnection('ws://${targetIp}:8080')
+	
+	const [deviceLog, startStream] = useStream(`ws://${targetIp}:8080`)
 	const [options, handleOptions] = useStateObjectHandler<OptionsModel>(defaults.options)
 	
 	useEffect(() => {
@@ -164,7 +165,7 @@ const ConnectionProvider: React.FC<{
 }> = ({toggleWindowSize}) => {
 	const [connData, setConnData] = useState<connModel>(connDefaults)
 	const sshString = `${connData.user}@${connData.ipAddress}`
-	const [targetProbeResponse, probe, , ,err] = useConnection(connData.ipAddress)
+	const [targetProbeResponse, probe, err] = useConnection(connData.ipAddress)
 	const establishConnection = () => {
 		probe()
 	}

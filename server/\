@@ -31,23 +31,18 @@ class MyWebsocket(tornado.websocket.WebSocketHandler):
 
 
     def on_message(self, message):
-        print("INCOMING: "+message)
-        if message == 'check':
+        print("essage")
+        if message == 'check' or message == 'start':
             if(self.isRunning):
                 self.write_message("Already running!")
-                print("OUTGOING: Already running!")
             else:
-                self.write_message("Ok to start.")
-                print("OUTGOING: Ok to start.")
-        if message == 'start':
-            if(not self.isRunning):
-                IOLoop.current().asyncio_loop.create_task(self.stream_output())
                 self.write_message("Ok.")
-                print("OUTGOING: Ok.")
+        if not self.isRunning and message == 'start':
+            IOLoop.current().asyncio_loop.create_task(self.stream_output())
         else:
             self.write_message("Already running!")
-            print("OUTGOING: Already running!")
             self.close()
+        print("essage")
 
 
     def on_close(self):
@@ -63,19 +58,17 @@ class MyWebsocket(tornado.websocket.WebSocketHandler):
             in the buffer to the terminal, even if normally it would wait before doing so.
             Apr 5, 2012
         """
-        print('starting')
         self.isRunning = True
         sub_process = tornado.process.Subprocess(
-            ["python3", "-u", "test.py"], 
+            ["python3", "test.py"], 
             stdout=PIPE, 
-            stderr=PIPE,
-            universal_newlines=True
+            stderr=PIPE
         )
         for line in iter(sub_process.stdout.readline, ""):
             if(line == b''):
                 break;
             self.write_message(line)
-        #self.close()
+            self.close()
         self.isRunning = False
 
 

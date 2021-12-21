@@ -1,9 +1,9 @@
 import time
-import sys
 
 k = 0
 while True:
-    sys.stdout.write(k)
-    sys.stdout.flush()
+    print(str(k), flush=True)
     time.sleep(1)
     k += 1
+    if(k == 4):
+        break;
