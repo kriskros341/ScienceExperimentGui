@@ -17,18 +17,6 @@ DataTbl = sa.Table('Data', meta,
 #aiomysql.sa 
 
 
-#class MyHTTP(tornado.web.RequestHandler)
-
-
-
-
-
-
-
-
-
-
-
 class MyWebsocket(tornado.websocket.WebSocketHandler):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -41,7 +29,6 @@ class MyWebsocket(tornado.websocket.WebSocketHandler):
     
     async def get(self, *args, **kwargs):
         # Why reinvent the wheel. literally.
-        print("get")
         if('check' in self.request.query.split('&')):
             if(self.isRunning):
                 self.write("In use")
@@ -57,9 +44,6 @@ class MyWebsocket(tornado.websocket.WebSocketHandler):
 
 
     def on_message(self, message):
-        print("INCOMING: "+message)
-        print("ISRUNNING", self.isRunning) 
-        print("PROCESS", self.process)
         if message == 'check':
             if(self.process):
                 self.write_message("Already running!")
@@ -94,6 +78,7 @@ class MyWebsocket(tornado.websocket.WebSocketHandler):
         print('starting')
         self.isRunning = True
         self.process = tornado.process.Subprocess(
+            #["python3", "-u", "controls.py", "m", "45"]
             ["python3", "-u", "test.py"], 
             stdout=PIPE, 
             stderr=PIPE,
@@ -113,6 +98,5 @@ app = tornado.web.Application([
 
 
 if __name__ == "__main__":
-    print()
-    app.listen(8080)
+    app.listen(8000)
     IOLoop.current().start()

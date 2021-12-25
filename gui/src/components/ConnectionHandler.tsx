@@ -6,22 +6,20 @@ import OptionsView, {OptionsModel} from './OptionsView'
 
 export type streamStateModel = "preStream" | "streamStarted"
 
-
-
-
 const ControlsBtn: React.FC<{text: string, onBtnClick: () => void}> = ({text, onBtnClick}) => {
 	const ControlsBtnHandler = {
 		clicked: () => onBtnClick()
 	}
 	return (
 		<Button
-			style={ControlsBtnStyle}
+			id={'mainBtnStyle'}
 			on={ControlsBtnHandler}
 		>
 			{text}
 		</Button>
 	)
 }
+
 
 interface ConnectionComponent {
 	setConnData: (s: Partial<connModel>) => void
@@ -48,9 +46,9 @@ const ConnectionForm: React.FC<ConnectionComponent> = (
 			}		
 		},
 	}
-	const userChangeHandler = {
-		textChanged: (user: string) => {
-			setConnData({user: user})
+	const portChangeHandler = {
+		textChanged: (port: string) => {
+			setConnData({port: port})
 		}
 	}
 	const ipChangeHandler = {
@@ -60,27 +58,34 @@ const ConnectionForm: React.FC<ConnectionComponent> = (
 	}
 	return (
 		<View 
-			style={containerStyle}
-			id={"container"}
+			style={containerBox}
 		>
-			<View style={'flex: 0; flex-direction: row;'}>
-				<LineEdit 
-					style={'flex: 2rem; width: 128px;'}
-					on={userChangeHandler}
-					enabled={!isConnecting}
-					text={connData.user}
-				/>
-				<Text>@</Text>
+		<View 
+			style={containerStyle}
+		>
+			<View style={
+					`flex: 0; 
+					 flex-direction: row;
+						margin-bottom: 8px;
+				`}>
+				<Text>pi@</Text>
 				<LineEdit
 					style={'flex: 100%'}
 					on={ipChangeHandler}
 					enabled={!isConnecting}
 					text={connData.ipAddress}
 				/>
+				<Text>:</Text>
+				<LineEdit 
+					style={'flex: 2rem; width: 86px;'}
+					on={portChangeHandler}
+					enabled={!isConnecting}
+					text={connData.port}
+				/>
 			</View>
 			<Button 
 				on={connectBtnHandler}
-				id={"connectBtn"}
+				id={'connButtonStyle'}
 			>
 				{isConnecting ? "Connecting" : "Connect"} 
 			</Button>
@@ -88,17 +93,34 @@ const ConnectionForm: React.FC<ConnectionComponent> = (
 				<Text>{err}</Text>
 			)}
 		</View>
+	</View>
 	)
 }
 
+const containerBox = `
+	flex: 1;
+	height: '100%';
+	flex-direction: 'row';
+	justify-content: 'space-evenly';
+	align-items: 'center';
+`
+const containerStyle = `
+	width: '80%';
+	min-width: 250px;
+`
+
+
+
+
+
+
 const Interface: React.FC<{
-	targetIp: string,
+	connString: string,
 	toggleWindowSize: () => () => void 
-}> = ({targetIp, toggleWindowSize}) => {
+}> = ({connString, toggleWindowSize}) => {
 	const [streamState, setStreamState] = useState<streamStateModel>("preStream")
 	
-	const [deviceLog, startStream] = useStream(`ws://${targetIp}:8080`)
-	const [options, handleOptions] = useStateObjectHandler<OptionsModel>(defaults.options)
+	const [deviceLog, startStream] = useStream(`ws://${connString}`)
 	
 	useEffect(() => {
 		const makeWindowSmallAgain = toggleWindowSize()
@@ -111,7 +133,7 @@ const Interface: React.FC<{
 	const mainBtnText = isStreaming ? "end stream" : "start stream"
 
 	return (
-		<>
+		<View style={ContainerStyle}>
 			<ControlsBtn
 				onBtnClick={mainBtnHandler}
 				text={mainBtnText}
@@ -125,11 +147,15 @@ const Interface: React.FC<{
 				<OptionsView />
 			)
 			)}
-		</>
+		</View>
 	)
 }
 
 
+const ContainerStyle = `
+	margin: 16px;
+
+`
 
 
 
@@ -151,25 +177,24 @@ const useStateObjectHandler = <T, >(initialState: T) => {
 }
 
 type connModel = {
-	user: string;
+	port: string;
 	ipAddress: string;
 }
 
 const connDefaults: connModel = {
-	user: "root",
-	ipAddress: "192.168.1.21",
+	port: "8080",
+	ipAddress: "192.168.100.200",
 }
 
 const ConnectionProvider: React.FC<{
 	toggleWindowSize: () => () => void
 }> = ({toggleWindowSize}) => {
 	const [connData, setConnData] = useState<connModel>(connDefaults)
-	const sshString = `${connData.user}@${connData.ipAddress}`
-	const [targetProbeResponse, probe, err] = useConnection(connData.ipAddress)
+	const connString = `${connData.ipAddress}:${connData.port}`
+	const [canConnect, probe, err] = useConnection(connString)
 	const establishConnection = () => {
 		probe()
 	}
-	console.log(sshString)
 	//CIEKAWE
 	const handleConnDataChange = (val: Partial<connModel>) => {
 		setConnData(v => ({...v, ...val}))
@@ -180,11 +205,11 @@ const ConnectionProvider: React.FC<{
 	//
 	// connection and stream are separate... is it wrong?
 	return (
-		<View	style={boxStyle}>
-			{targetProbeResponse ? (
+		<View	id={'mainBox'}>
+			{canConnect ? (
 				<Interface
 					toggleWindowSize={toggleWindowSize}
-					targetIp={connData.ipAddress}	
+					connString={connString}	
 				/>
 			) : (
 				<ConnectionForm 
@@ -198,26 +223,9 @@ const ConnectionProvider: React.FC<{
 	)
 }
 
-const containerStyle = `
-	#container {
-		padding: 16px;
-	}
-	#connectBtn {
-		margin-top: 4px;
-		min-height: 2em;
-	}
-	#connectBtn:hover {
-		background-color: yellow;
-	}
-`;
-
-const ControlsBtnStyle = `
-	min-height: 2rem;
-	padding: 8px;
-`
 
 const boxStyle = `
-	padding: 8px 16px 16px 16px;
+	height: '100%';
 `
 
 export default ConnectionProvider

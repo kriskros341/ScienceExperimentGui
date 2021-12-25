@@ -47,21 +47,11 @@ const LogView: React.FC<LogViewInterface> = ({logs, streamStart}) => {
 		return () => cleanup()
 	}, [])
 	return (
-		<View style={"flex: 1; flex-direction: row"}>
-			<View style={"flex: 3; padding-right: 4"}>
+		<View style={""}>
+			<View style={""}>
 				<MemorizedLogArea 
 					data={newEntries}
 				/>
-			</View>
-			<View style={"flex: 1; padding-left: 4"}>
-				<Text>Options:</Text>
-				<Button
-					on={{clicked: () => {
-						toggleNewEntries()
-					}}}
-				>
-					{showNewEntries ? "HoldRefreshes" : "ReasumeRefreshes"}
-				</Button>
 			</View>
 		</View>
 	)

@@ -3,14 +3,14 @@ import { useCallback, useMemo, useEffect, useRef, useState } from 'react'
 import http from 'http'
 import axios from 'axios'
 
-export const useConnection = (path: string) => {
+export const useConnection = (connString: string) => {
 	const [, refresher] = useState<boolean>(false)
 	const refresh = () => refresher(v => !v)
 	const [ conState, setConState	] = useState<boolean>(false);
 	const err = useRef<string>(' ') 
 	//CHANGING FROM AN EMPTY STRING CRASHES AFTER RERENDER ?!?!?!
 	const testConnection = () => {
-		axios.get('http://'+path+":8080/?check")
+		axios.get('http://'+connString+"/?check")
 			.then(d => {
 				if(d.data == 'Ok') {
 					setConState(true)
@@ -27,14 +27,14 @@ export const useConnection = (path: string) => {
 	return [ conState, testConnection, err.current ] as [boolean, () => void, string] 
 }
 
-export const useStream = (path: string) => {
+export const useStream = (connString: string) => {
 	const [, refresher] = useState<boolean>(false)
 	const refresh = () => refresher(v => !v)
 	const [ isRunning, setRunning ] = useState<boolean>(false)
 	const ws = useRef<WebSocket>();
 	const messageLog = useRef<string[]>([])
 	useEffect(() => {
-		ws.current = new WebSocket(path)
+		ws.current = new WebSocket(connString)
 		ws.current.on('open', () => console.log('\nopen!\n'))
 		ws.current.on('close', () => console.log('\nclosed!\n'))
 		ws.current.on('error', (e) => {
