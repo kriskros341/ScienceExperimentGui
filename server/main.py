@@ -23,6 +23,7 @@ class MyWebsocket(tornado.websocket.WebSocketHandler):
         self.isRunning = False
         self.process = None
 
+
     def check_origin(self, origin):
         return False
 
@@ -38,22 +39,24 @@ class MyWebsocket(tornado.websocket.WebSocketHandler):
             await super().get(*args, **kwargs)
 
 
-
     def open(self):
         print("opened")
 
 
     def on_message(self, message):
-        if message == 'check':
+        message = message.split('&');
+        if message[0]:
             if(self.process):
                 self.write_message("Already running!")
                 print("OUTGOING: Already running!")
             else:
                 self.write_message("Ok to start.")
                 print("OUTGOING: Ok to start.")
-        if message == 'start':
+        if message[1]:
             if(not self.process):
-                IOLoop.current().asyncio_loop.create_task(self.stream_output())
+                IOLoop.current().asyncio_loop.create_task(
+                        self.stream_output(message[1:])
+                        )
                 self.write_message("Ok.")
                 print("OUTGOING: Ok.")
         else:
@@ -66,7 +69,7 @@ class MyWebsocket(tornado.websocket.WebSocketHandler):
         print("closed")
 
 
-    async def stream_output(self):
+    async def stream_output(self, message):
         # 5 godzin stracone bo zapomniałem o sys.stdout.flush()
         """
             Python's standard out is buffered (meaning that it collects some of the data 
@@ -79,7 +82,7 @@ class MyWebsocket(tornado.websocket.WebSocketHandler):
         self.isRunning = True
         self.process = tornado.process.Subprocess(
             #["python3", "-u", "controls.py", "m", "45"]
-            ["python3", "-u", "test.py"], 
+            ["python3", "-u", message[0], message[1], message[2]], 
             stdout=PIPE, 
             stderr=PIPE,
         )

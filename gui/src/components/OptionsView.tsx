@@ -3,46 +3,15 @@ import { LineEdit, View, Text, useEventHandler, ScrollArea, ComboBox, CheckBox }
 import React, { useMemo, memo, useState, useCallback, useRef, useEffect } from "react";
 import { QLineEdit, QLineEditSignals, QScrollAreaSignals, QWheelEvent, QComboBoxSignals, WidgetEventTypes } from '@nodegui/nodegui'
 
-
+import { OptionsModel, Measures, defaults } from './ConnectionHandler'
 
 //c - chłodzenie; h - grzanie; cv - kalibracja; t - pomiar długości; m - pełna procedura
-type measure = 'c' | 'h' | 'cv' | 't' | 'm'
-
-
-const Measures: measure[] = [
-	'm',
-	't',
-	'cv',
-	'h',
-	'c',
-]
-const Measuress = {
-	0: 'pełna procedura',
-	1: 'pomiar długości', 
-	2: 'kalibracja', 
-	3: 'grzanie', 
-	4: 'chłodzenie', 
-}
-
-export type OptionsModel = {
-	temperature: number
-	scriptname: string
-	measurement: measure
-}
-
-const defaults: OptionsModel = {
-	scriptname: 'controls.py',
-	temperature: 40,
-	measurement: 'm'
-}
 
 const MIN = 30
 const MAX = 100
 
 
 const PleaseWork = memo( (HandleProcedure: any) => 
-
-
 	<ComboBox
 		on={HandleProcedure.HandleProcedure}
 		style={`width: '99%'`}
@@ -55,39 +24,41 @@ const PleaseWork = memo( (HandleProcedure: any) =>
 		]} />
 )
 
-const OptionsView = () => {
-	const [ advanced, setAdvanced ] = useState<boolean>(false)
-	const [ options, setOptions ] = useState<OptionsModel>(defaults)
+
+const OptionsView: React.FC<{
+	options: OptionsModel,
+	setOptionsHandler: (val: Partial<OptionsModel>) => void
+}> = ({options, setOptionsHandler}) => {
 	const HandleProcedure = useEventHandler<QComboBoxSignals>({
 		currentIndexChanged: (e: number) => {
 			if(e != -1) {
-				setOptions(v => ({...v, measurement: Measures[e]}))
+				setOptionsHandler({measurement: Measures[e]})
 			}
 		}
 	}, [])
 
 	const HandleScriptname = useEventHandler<QLineEditSignals>({
 		textChanged: (text: string) => {
-			setOptions(v => ({...v, scriptname: text}))
+			setOptionsHandler({scriptname: text})
 		},
 		editingFinished: () => {
 			if(options.scriptname == '') {
-				setOptions(v => ({...v, scriptname: defaults.scriptname}))
+				setOptionsHandler({scriptname: defaults.scriptname})
 			}
 		},
 	}, [options])
 	const HandleTemperature = useEventHandler<QLineEditSignals>({
 		textChanged: (text: string) => {
 			const numericValue = parseInt(text)
-			setOptions(v => ({...v, temperature: numericValue}))
+			setOptionsHandler({temperature: numericValue})
 		},
 		editingFinished: () => {
 			console.log(options.temperature)
 			if(options.temperature < 30) {
-				setOptions(v => ({...v, temperature: defaults.temperature}))
+				setOptionsHandler({temperature: defaults.temperature})
 			}
 			if(options.temperature > 100) {
-				setOptions(v => ({...v, temperature: defaults.temperature}))
+				setOptionsHandler({temperature: defaults.temperature})
 			}
 		},
 		[WidgetEventTypes.Wheel]: (e: any) => {
@@ -96,22 +67,16 @@ const OptionsView = () => {
 			if(change < MIN || change > MAX) {
 				return;
 			}
-			setOptions(v => ({...v, temperature: change}))
+			setOptionsHandler({temperature: change})
 		} 
 	}, [options])
 	return (
 		<>
-			<View style={ViewStyle}>
-				<Text style={`width: 164px;`}>
-					python3 {options.scriptname} {options.measurement} {options.temperature}
-				</Text>
-			</View>
 			<View style={InputStyle}>
 				<View style={`
 						flex: 3;
 						height: '100%'; 
 						justify-content: 'space-between';
-						margin-left: 8px;
 					`}>
 					<Text>nazwa skryptu</Text>
 					<LineEdit 
@@ -144,7 +109,11 @@ const OptionsView = () => {
 						} 
 					/>
 				</View>
-				{advanced ? <LineEdit style={"min-height: 2rem"}/> : <Text />}
+			</View>
+			<View style={ViewStyle}>
+				<Text style={`width: 164px;`}>
+					python3 {options.scriptname} {options.measurement} {options.temperature}
+				</Text>
 			</View>
 		</>
 	)
@@ -154,10 +123,13 @@ const InputStyle = `
 	flex-direction: 'row';
 	align-items: 'center';
 	justify-content: 'space-between';
+	margin-top: '16px';
+	margin-left: 0;
 `
 
 
 const ViewStyle = `
+	margin-top: 16px;
 	font-size: 32px;
 	height: 40px;
 	justify-content: 'center'; 

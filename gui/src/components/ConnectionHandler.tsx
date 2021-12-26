@@ -2,7 +2,7 @@ import { View, Button, LineEdit, Text  } from "@nodegui/react-nodegui";
 import { useStream, useConnection } from '../connect'
 import React, { useState, useEffect, useCallback } from "react";
 import LogView from './LogView'
-import OptionsView, {OptionsModel} from './OptionsView'
+import OptionsView from './OptionsView'
 
 export type streamStateModel = "preStream" | "streamStarted"
 
@@ -110,6 +110,30 @@ const containerStyle = `
 `
 
 
+type measure = 'c' | 'h' | 'cv' | 't' | 'm'
+
+
+export const Measures: measure[] = [
+	'm',
+	't',
+	'cv',
+	'h',
+	'c',
+]
+
+
+export type OptionsModel = {
+	temperature: number
+	scriptname: string
+	measurement: measure
+}
+
+
+export const defaults: OptionsModel = {
+	scriptname: 'controls.py',
+	temperature: 40,
+	measurement: 'm'
+}
 
 
 
@@ -120,12 +144,18 @@ const Interface: React.FC<{
 }> = ({connString, toggleWindowSize}) => {
 	const [streamState, setStreamState] = useState<streamStateModel>("preStream")
 	
-	const [deviceLog, startStream] = useStream(`ws://${connString}`)
-	
+	const [ options, setOptions ] = useState<OptionsModel>(defaults)
+	const startString: string = 
+		`start&${options.scriptname}&${options.measurement}&${options.temperature}`
+	const [deviceLog, startStream] = useStream(`ws://${connString}`, startString)
 	useEffect(() => {
 		const makeWindowSmallAgain = toggleWindowSize()
 		return () => makeWindowSmallAgain()
 	}, [])
+
+	const setOptionsHandler = (val: Partial<OptionsModel>) => {
+		setOptions((v: OptionsModel) => ({...v, ...val}))
+	}
 	
 	const mainBtnHandler = () => 
 		isStreaming ? setStreamState("preStream") : setStreamState("streamStarted")
@@ -144,7 +174,10 @@ const Interface: React.FC<{
 					streamStart={startStream} 
 				/>
 			) : (
-				<OptionsView />
+				<OptionsView 
+					options={options}
+					setOptionsHandler={setOptionsHandler}
+				/>
 			)
 			)}
 		</View>
@@ -156,25 +189,6 @@ const ContainerStyle = `
 	margin: 16px;
 
 `
-
-
-
-const defaults = {
-	ipAddress: "localhost",
-	options: {
-		temperature: 40,
-	}
-}
-
-const useStateObjectHandler = <T, >(initialState: T) => {
-	const [ state, setState ] = useState<T>(initialState)
-	const changeHandler = useCallback((newState: T) => {
-		setState(
-			(current: any) => ({...current, ...newState})
-		)
-	}, [])
-	return [state, changeHandler] as [T, (newState: T) => void]
-}
 
 type connModel = {
 	port: string;

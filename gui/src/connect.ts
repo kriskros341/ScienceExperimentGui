@@ -1,7 +1,7 @@
 import WebSocket from 'ws'
 import { useCallback, useMemo, useEffect, useRef, useState } from 'react'
-import http from 'http'
 import axios from 'axios'
+
 
 export const useConnection = (connString: string) => {
 	const [, refresher] = useState<boolean>(false)
@@ -27,7 +27,8 @@ export const useConnection = (connString: string) => {
 	return [ conState, testConnection, err.current ] as [boolean, () => void, string] 
 }
 
-export const useStream = (connString: string) => {
+
+export const useStream = (connString: string, query: string) => {
 	const [, refresher] = useState<boolean>(false)
 	const refresh = () => refresher(v => !v)
 	const [ isRunning, setRunning ] = useState<boolean>(false)
@@ -58,7 +59,7 @@ export const useStream = (connString: string) => {
 
 	const startStream = () => {
 		if(ws.current && !isRunning) {
-			ws.current!.send('start')
+			ws.current!.send(query)
 		}
 		return () => {
 			messageLog.current = []
