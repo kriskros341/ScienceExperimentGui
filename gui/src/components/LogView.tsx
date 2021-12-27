@@ -1,18 +1,17 @@
 import { Text, Window, View, LineEdit, Button, PlainTextEdit } from "@nodegui/react-nodegui";
 import React, {useState, useEffect, memo } from 'react'
+import {windowSizeModel} from "./windowHandler";
 
 
-interface LogViewInterface {
-	streamStart: () => () => void;
-	logs: string[];
-}
 
 interface LogAreaInterface {
 	data: string[];
 }
 
 
-const LogArea: React.FC<{data: string[]}> = ({data}) => {
+const LogArea: React.FC<{
+	data: string[],
+}> = ({data}) => {
 	useEffect(() => {
 		console.log(data)
 	}, [ data.length ])
@@ -30,13 +29,23 @@ const LogArea: React.FC<{data: string[]}> = ({data}) => {
 }
 
 const MemorizedLogArea = memo(LogArea)
-const LogView: React.FC<LogViewInterface> = ({logs, streamStart}) => {
+
+
+interface LogViewInterface {
+	streamStart: () => () => void;
+	logs: string[];
+	setWindowSize: (s: windowSizeModel) => void;
+}
+
+
+const LogView: React.FC<LogViewInterface> = ({
+	logs, streamStart, setWindowSize
+}) => {
 	const [ newEntries, setNewEntries ] = useState<string[]>([])
 	const [ showNewEntries, setShowNewEntries ] = useState<boolean>(true)
-	const toggleNewEntries = () => {
-		setShowNewEntries(v => !v)
-		setNewEntries(logs)
-	}
+	useEffect(() => {
+		setWindowSize('large')
+	}, [])
 	useEffect(() => {
 		if(showNewEntries) {
 			setNewEntries([...logs])

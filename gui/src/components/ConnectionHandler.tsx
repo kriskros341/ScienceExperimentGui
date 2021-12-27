@@ -3,6 +3,7 @@ import { useStream, useConnection } from '../connect'
 import React, { useState, useEffect, useCallback } from "react";
 import LogView from './LogView'
 import OptionsView from './OptionsView'
+import { windowSizeModel } from "./windowHandler";
 
 export type streamStateModel = "preStream" | "streamStarted"
 
@@ -26,10 +27,11 @@ interface ConnectionComponent {
 	establishConnection: () => void
 	connData: connModel
 	err: string | null
+	setWindowSize: (s: windowSizeModel) => void
 }
 
 const ConnectionForm: React.FC<ConnectionComponent> = (
-	{ connData, setConnData, establishConnection, err }
+	{ setWindowSize, connData, setConnData, establishConnection, err }
 ) => {
 	const [ isConnecting, setConnecting ] = useState<boolean>(false)
 	useEffect(() => {
@@ -37,6 +39,9 @@ const ConnectionForm: React.FC<ConnectionComponent> = (
 			setConnecting(false)
 		}
 	}, [err])
+	useEffect(() => {
+		setWindowSize('small')
+	}, [])
 	const connectBtnHandler = {
 		clicked: (e: any) => {
 			setConnecting(v => !v)
@@ -46,6 +51,9 @@ const ConnectionForm: React.FC<ConnectionComponent> = (
 			}		
 		},
 	}
+	useEffect(() => {
+		
+	}, [])
 	const portChangeHandler = {
 		textChanged: (port: string) => {
 			setConnData({port: port})
@@ -139,29 +147,28 @@ export const defaults: OptionsModel = {
 
 
 const Interface: React.FC<{
+	disconnect: () => void,
 	connString: string,
-	toggleWindowSize: () => () => void 
-}> = ({connString, toggleWindowSize}) => {
+	setWindowSize: (s: windowSizeModel) => void
+}> = ({connString, setWindowSize, disconnect}) => {
 	const [streamState, setStreamState] = useState<streamStateModel>("preStream")
 	
 	const [ options, setOptions ] = useState<OptionsModel>(defaults)
 	const startString: string = 
 		`start&${options.scriptname}&${options.measurement}&${options.temperature}`
 	const [deviceLog, startStream] = useStream(`ws://${connString}`, startString)
-	useEffect(() => {
-		const makeWindowSmallAgain = toggleWindowSize()
-		return () => makeWindowSmallAgain()
-	}, [])
 
 	const setOptionsHandler = (val: Partial<OptionsModel>) => {
 		setOptions((v: OptionsModel) => ({...v, ...val}))
 	}
-	
+	const restart = () => {
+		setStreamState("preStream");
+		disconnect();
+	}
 	const mainBtnHandler = () => 
-		isStreaming ? setStreamState("preStream") : setStreamState("streamStarted")
+		isStreaming ? restart() : setStreamState("streamStarted")
 	const isStreaming = streamState === "streamStarted"
 	const mainBtnText = isStreaming ? "end stream" : "start stream"
-
 	return (
 		<View style={ContainerStyle}>
 			<ControlsBtn
@@ -170,11 +177,13 @@ const Interface: React.FC<{
 			/>
 			{(isStreaming ? (
 				<LogView 
+					setWindowSize={setWindowSize}
 					logs={deviceLog} 
 					streamStart={startStream} 
 				/>
 			) : (
 				<OptionsView 
+					setWindowSize={setWindowSize}
 					options={options}
 					setOptionsHandler={setOptionsHandler}
 				/>
@@ -201,11 +210,11 @@ const connDefaults: connModel = {
 }
 
 const ConnectionProvider: React.FC<{
-	toggleWindowSize: () => () => void
-}> = ({toggleWindowSize}) => {
+	setWindowSize: (s: windowSizeModel) => void
+}> = ({setWindowSize}) => {
 	const [connData, setConnData] = useState<connModel>(connDefaults)
 	const connString = `${connData.ipAddress}:${connData.port}`
-	const [canConnect, probe, err] = useConnection(connString)
+	const [canConnect, dc, probe, err] = useConnection(connString)
 	const establishConnection = () => {
 		probe()
 	}
@@ -222,12 +231,14 @@ const ConnectionProvider: React.FC<{
 		<View	id={'mainBox'}>
 			{canConnect ? (
 				<Interface
-					toggleWindowSize={toggleWindowSize}
-					connString={connString}	
+					setWindowSize={setWindowSize}
+					connString={connString}
+					disconnect={dc}
 				/>
 			) : (
 				<ConnectionForm 
 					connData={connData}
+					setWindowSize={setWindowSize}
 					setConnData={(newData: Partial<connModel>) => handleConnDataChange(newData)}
 					establishConnection={establishConnection}
 					err={err}

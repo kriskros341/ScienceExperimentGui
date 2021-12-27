@@ -4,6 +4,7 @@ import React, { useMemo, memo, useState, useCallback, useRef, useEffect } from "
 import { QLineEdit, QLineEditSignals, QScrollAreaSignals, QWheelEvent, QComboBoxSignals, WidgetEventTypes } from '@nodegui/nodegui'
 
 import { OptionsModel, Measures, defaults } from './ConnectionHandler'
+import {windowSizeModel} from "./windowHandler";
 
 //c - chłodzenie; h - grzanie; cv - kalibracja; t - pomiar długości; m - pełna procedura
 
@@ -27,8 +28,9 @@ const PleaseWork = memo( (HandleProcedure: any) =>
 
 const OptionsView: React.FC<{
 	options: OptionsModel,
+	setWindowSize: (s: windowSizeModel) => void 
 	setOptionsHandler: (val: Partial<OptionsModel>) => void
-}> = ({options, setOptionsHandler}) => {
+}> = ({options, setOptionsHandler, setWindowSize}) => {
 	const HandleProcedure = useEventHandler<QComboBoxSignals>({
 		currentIndexChanged: (e: number) => {
 			if(e != -1) {
@@ -37,6 +39,9 @@ const OptionsView: React.FC<{
 		}
 	}, [])
 
+	useEffect(() => {
+		setWindowSize('medium')
+	}, [])
 	const HandleScriptname = useEventHandler<QLineEditSignals>({
 		textChanged: (text: string) => {
 			setOptionsHandler({scriptname: text})
@@ -81,6 +86,8 @@ const OptionsView: React.FC<{
 					<Text>nazwa skryptu</Text>
 					<LineEdit 
 						on={HandleScriptname}
+						style={"width: '99%'"} 
+						// this helps with visual glitch where last pixel gets cut.
 						text={options.scriptname}
 					/>
 				</View>
@@ -101,9 +108,10 @@ const OptionsView: React.FC<{
 						justify-content: 'space-between';
 						margin-left: 16px;
 					`}>
-					<Text>Temperatura docelowa</Text>
+					<Text>Temperatura</Text>
 					<LineEdit 
 						on={HandleTemperature} 
+						style={"width: '99%'"}
 						text={
 							isNaN(options.temperature) ? '' : options.temperature.toString()
 						} 

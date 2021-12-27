@@ -8,20 +8,19 @@ type OptionsModel = {
 	temperature?: number
 }
 
-export type windowSizeModel = 'small' | 'large'
+export type windowSizeModel = 'small' | 'medium' | 'large'
 
 const windowSizes = {
 	'large': {width: 600, height: 600},
+	'medium': {width: 480, height: 240},
 	'small': {width: 360, height: 120}
 }
 
 
 const WindowHandler: React.FC<{}> = ({}) => {
 	const [ windowSize, setWindowSizeState ] = useState<windowSizeModel>('small')
-	const isWindowSmall = windowSize === 'small'
-	const changeWindowSizeWithCallback = () => {
-		setWindowSizeState(isWindowSmall ? 'large' : 'small')
-		return () => setWindowSizeState(isWindowSmall ? 'small' : 'large')
+	const setWindowSize = (s: windowSizeModel) => {
+		setWindowSizeState(s)
 	}
 	return (
 		<Window
@@ -29,7 +28,7 @@ const WindowHandler: React.FC<{}> = ({}) => {
 			styleSheet={styleSheet}
 		>
 			<ConnectionProvider
-				toggleWindowSize={changeWindowSizeWithCallback}
+				setWindowSize={setWindowSize}
 			/>
 		</Window>
 	)

@@ -24,7 +24,13 @@ export const useConnection = (connString: string) => {
 				err.current = e.code
 				refresh()
 			})	}
-	return [ conState, testConnection, err.current ] as [boolean, () => void, string] 
+	const disconnect = () => {
+		err.current = ' '
+		setConState(false)
+		
+
+	}
+	return [ conState, disconnect, testConnection, err.current ] as [boolean, () => void, () => void, string] 
 }
 
 
